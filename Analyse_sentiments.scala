@@ -48,7 +48,7 @@ val updatedDF = tweetsDF.withColumn("sentiment_label",
 updatedDF.select("sentiment", "sentiment_label").show(5)
 
 val labeledDF = vectorizedDF.join(updatedDF, Seq("textID"))
-val assembler = new VectorAssembler().setInputCols(Array("features")).setOutputCol("assembledFeatures")
+val assembler = new VectorAssembler().setInputCols(Array("vectorize")).setOutputCol("assembledFeatures")
 val trainingData = assembler.transform(labeledDF)
 
 val lr = new LogisticRegression().setFeaturesCol("assembledFeatures").setLabelCol("sentiment_label")
