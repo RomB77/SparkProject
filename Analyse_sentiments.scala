@@ -2,18 +2,21 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.ml.feature.StopWordsRemover 
+import org.apache.spark.ml.feature.CountVectorizer
 
 val spark = SparkSession.builder.appName("SentimentAnalysis").getOrCreate()
 val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
 tweetsDF.show(5)
 
 val nettoyerUDF = udf((text: String) => {
-  var cleanedText = text.replaceAll("http[\\S]+", "")
-  cleanedText = cleanedText.replaceAll("@\\w+", "")
-  cleanedText = cleanedText.replaceAll("#\\w+", "")
-  cleanedText = cleanedText.replaceAll("[^a-zA-Z\\s]", "")
-  cleanedText = cleanedText.toLowerCase()
-  cleanedText
+  if (text != null) {
+	  var cleanedText = text.replaceAll("http[\\S]+", "")
+	  cleanedText = cleanedText.replaceAll("@\\w+", "")
+	  cleanedText = cleanedText.replaceAll("#\\w+", "")
+	  cleanedText = cleanedText.replaceAll("[^a-zA-Z\\s]", "")
+	  cleanedText = cleanedText.toLowerCase()
+	  cleanedText
+  } else ""
 })
  
 val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
@@ -30,3 +33,7 @@ val remover = new StopWordsRemover()
  
 val finalDF = remover.transform(tokenizedDF)
 finalDF.select("tokens", "filtered_tokens").show(5)
+
+val vectorizer = new CountVectorizer().setInputCol("filtered_tokens").setOutputCol("features")
+val vectorizedDF = vectorizer.fit(finalDF).transform(finalDF)
+vectorizedDF.select("filtered_tokens", "features").show(5)
