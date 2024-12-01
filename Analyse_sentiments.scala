@@ -4,6 +4,7 @@ import org.apache.spark.ml.feature.Tokenizer
 import org.apache.spark.ml.feature.StopWordsRemover 
 import org.apache.spark.ml.feature.CountVectorizer
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.classification.LogisticRegression
 
 val spark = SparkSession.builder.appName("SentimentAnalysis").getOrCreate()
 val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
