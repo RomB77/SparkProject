@@ -1,9 +1,6 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.spark.ml.feature.Tokenizer
-import org.apache.spark.ml.feature.StopWordsRemover 
-import org.apache.spark.ml.feature.CountVectorizer
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.{Tokenizer, StopWordsRemover, CountVectorizer, HashingTF, IDF, VectorAssembler}
 import org.apache.spark.ml.classification.LogisticRegression
 
 val spark = SparkSession.builder.appName("SentimentAnalysis").getOrCreate()
@@ -12,52 +9,74 @@ tweetsDF.show(5)
 
 val nettoyerUDF = udf((text: String) => {
   if (text != null) {
-	  var cleanedText = text.replaceAll("http[\\S]+", "")
-	  cleanedText = cleanedText.replaceAll("@\\w+", "")
-	  cleanedText = cleanedText.replaceAll("#\\w+", "")
-	  cleanedText = cleanedText.replaceAll("[^a-zA-Z\\s]", "")
-	  cleanedText = cleanedText.toLowerCase()
-	  cleanedText
+    var cleanedText = text.replaceAll("http[\\S]+", "")
+    cleanedText = cleanedText.replaceAll("@\\w+", "")
+    cleanedText = cleanedText.replaceAll("#\\w+", "")
+    cleanedText = cleanedText.replaceAll("[^a-zA-Z\\s]", "")
+    cleanedText = cleanedText.toLowerCase()
+    cleanedText
   } else ""
 })
- 
-val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
-val cleanedTweetsDF = tweetsDF.withColumn("cleaned_text", nettoyerUDF(col("selected_text")))
-cleanedTweetsDF.select("selected_text", "cleaned_text").show(5)
 
-val tokenizer = new Tokenizer().setInputCol("cleaned_text").setOutputCol("tokens") 
+val cleanedTweetsDF = tweetsDF.withColumn("cleaned_text", nettoyerUDF(col("selected_text")))
+
+val tokenizer = new Tokenizer().setInputCol("cleaned_text").setOutputCol("tokens")
 val tokenizedDF = tokenizer.transform(cleanedTweetsDF)
-tokenizedDF.select("cleaned_text", "tokens").show(5)
 
 val remover = new StopWordsRemover()
-  .setInputCol("tokens") 
-  .setOutputCol("filtered_tokens") 
- 
-val finalDF = remover.transform(tokenizedDF)
-finalDF.select("tokens", "filtered_tokens").show(5)
+  .setInputCol("tokens")
+  .setOutputCol("filtered_tokens")
 
-val vectorizer = new CountVectorizer().setInputCol("filtered_tokens").setOutputCol("vectorize")
-val vectorizedDF = vectorizer.fit(finalDF).transform(finalDF)
-vectorizedDF.select("filtered_tokens", "vectorize").show(5)
+val filteredDF = remover.transform(tokenizedDF)
 
-val updatedDF = tweetsDF.withColumn("sentiment_label", 
+val hashingTF = new HashingTF().setInputCol("filtered_tokens").setOutputCol("raw_features").setNumFeatures(5000)
+val featurizedDF = hashingTF.transform(filteredDF)
+
+val idf = new IDF().setInputCol("raw_features").setOutputCol("features")
+val idfModel = idf.fit(featurizedDF)
+val rescaledDF = idfModel.transform(featurizedDF)
+
+val updatedDF = tweetsDF.withColumn("sentiment_label",
   when(col("sentiment") === "positive", 1)
-  .when(col("sentiment") === "negative", 0)
-  .when(col("sentiment") === "neutral", 2)
-  .otherwise(3))
+    .when(col("sentiment") === "negative", 0)
+    .when(col("sentiment") === "neutral", 2)
+    .otherwise(3)
+)
 
-updatedDF.select("sentiment", "sentiment_label").show(5)
+val finalDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text"), Seq("selected_text"))
 
-val labeledDF = vectorizedDF.join(updatedDF, Seq("textID"))
-val assembler = new VectorAssembler().setInputCols(Array("vectorize")).setOutputCol("assembledFeatures")
-val trainingData = assembler.transform(labeledDF)
+val assembler = new VectorAssembler()
+  .setInputCols(Array("features"))
+  .setOutputCol("final_features")
 
-val lr = new LogisticRegression().setFeaturesCol("assembledFeatures").setLabelCol("sentiment_label")
+val finalDataDF = assembler.transform(finalDF)
 
-val lrModel = lr.fit(trainingData)
+val lr = new LogisticRegression().setLabelCol("sentiment_label").setFeaturesCol("final_features")
+val lrModel = lr.fit(finalDataDF)
 
-val predictions = lrModel.transform(trainingData)
-predictions.select("textID", "cleaned_text", "sentiment_label", "prediction").show(5)
+val predictions = lrModel.transform(finalDataDF)
+predictions.select("selected_text", "prediction").show(5)
+
+
+
+val newTweetsDF = spark.read.option("header", "true").csv("Data4.csv")
+val cleanedNewTweetsDF = newTweetsDF.withColumn("cleaned_text", nettoyerUDF(col("text")))
+val tokenizedNewTweetsDF = tokenizer.transform(cleanedNewTweetsDF)
+val finalNewTweetsDF = remover.transform(tokenizedNewTweetsDF)
+
+val featurizedNewTweetsDF = hashingTF.transform(finalNewTweetsDF)
+val rescaledNewTweetsDF = idfModel.transform(featurizedNewTweetsDF)
+
+val assemblerNew = new VectorAssembler()
+  .setInputCols(Array("features"))
+  .setOutputCol("final_features")
+
+val finalNewData = assemblerNew.transform(rescaledNewTweetsDF)
+val predictionsNew = lrModel.transform(finalNewData)
+
+predictionsNew.select("text", "cleaned_text", "prediction","sentiment").show(20)
+
+
 
 val totalTweets = predictions.count()
 val positiveTweets = predictions.filter(col("prediction") === 1).count()
