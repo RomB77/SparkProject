@@ -34,9 +34,9 @@ val remover = new StopWordsRemover()
 val finalDF = remover.transform(tokenizedDF)
 finalDF.select("tokens", "filtered_tokens").show(5)
 
-val vectorizer = new CountVectorizer().setInputCol("filtered_tokens").setOutputCol("features")
+val vectorizer = new CountVectorizer().setInputCol("filtered_tokens").setOutputCol("vectorize")
 val vectorizedDF = vectorizer.fit(finalDF).transform(finalDF)
-vectorizedDF.select("filtered_tokens", "features").show(5)
+vectorizedDF.select("filtered_tokens", "vectorize").show(5)
 
 val updatedDF = tweetsDF.withColumn("sentiment_label", 
   when(col("sentiment") === "positive", 1)
