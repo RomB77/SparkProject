@@ -83,5 +83,3 @@ val positiveTweets = predictionsNew.filter(col("prediction") === 1).count()
 val negativeTweets = predictionsNew.filter(col("prediction") === 0).count()
 val positivePercentage = (positiveTweets.toDouble / totalTweets) * 100
 val negativePercentage = (negativeTweets.toDouble / totalTweets) * 100
-println(s"Pourcentage de tweets positifs : $positivePercentage%")
-println(s"Pourcentage de tweets négatifs : $negativePercentage%")
