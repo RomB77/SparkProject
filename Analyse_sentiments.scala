@@ -42,6 +42,21 @@ val updatedDF = tweetsDF.withColumn("sentiment_label",
   when(col("sentiment") === "positive", 1)
   .when(col("sentiment") === "negative", 0)
   .when(col("sentiment") === "neutral", 2)
-  .otherwise(-1))
+  .otherwise(3))
 
 updatedDF.select("sentiment", "sentiment_label").show(5)
+
+// Préparation des données pour l'entraînement du modèle
+val labeledDF = vectorizedDF.join(updatedDF, Seq("textID"))  // On suppose que chaque tweet a un identifiant unique (textID)
+val assembler = new VectorAssembler().setInputCols(Array("features")).setOutputCol("assembledFeatures")
+val trainingData = assembler.transform(labeledDF)
+
+// Définition du modèle Logistic Regression
+val lr = new LogisticRegression().setFeaturesCol("assembledFeatures").setLabelCol("sentiment_label")
+
+// Entraînement du modèle
+val lrModel = lr.fit(trainingData)
+
+// Prédiction sur les données d'entraînement
+val predictions = lrModel.transform(trainingData)
+predictions.select("textID", "cleaned_text", "sentiment_label", "prediction").show(5)
