@@ -47,7 +47,7 @@ val updatedDF = tweetsDF.withColumn("sentiment_label",
 
 updatedDF.select("sentiment", "sentiment_label").show(5)
 
-val labeledDF = vectorizedDF.join(updatedDF, Seq("textID"))  // On suppose que chaque tweet a un identifiant unique (textID)
+val labeledDF = vectorizedDF.join(updatedDF, Seq("textID"))
 val assembler = new VectorAssembler().setInputCols(Array("features")).setOutputCol("assembledFeatures")
 val trainingData = assembler.transform(labeledDF)
 
