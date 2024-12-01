@@ -37,3 +37,11 @@ finalDF.select("tokens", "filtered_tokens").show(5)
 val vectorizer = new CountVectorizer().setInputCol("filtered_tokens").setOutputCol("features")
 val vectorizedDF = vectorizer.fit(finalDF).transform(finalDF)
 vectorizedDF.select("filtered_tokens", "features").show(5)
+
+val updatedDF = tweetsDF.withColumn("sentiment_label", 
+  when(col("sentiment") === "positive", 1)
+  .when(col("sentiment") === "negative", 0)
+  .when(col("sentiment") === "neutral", 2)
+  .otherwise(-1))
+
+updatedDF.select("sentiment", "sentiment_label").show(5)
