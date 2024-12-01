@@ -16,7 +16,7 @@ val nettoyerUDF = udf((text: String) => {
   cleanedText
 })
  
-val tweetsDF = spark.read.option("header", "true").csv("H:/Desktop/bddTwitter/Data3.csv")
+val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
 val cleanedTweetsDF = tweetsDF.withColumn("cleaned_text", nettoyerUDF(col("selected_text")))
 cleanedTweetsDF.select("selected_text", "cleaned_text").show(5)
 
