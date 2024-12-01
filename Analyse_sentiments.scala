@@ -1,0 +1,32 @@
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+import org.apache.spark.ml.feature.Tokenizer
+import org.apache.spark.ml.feature.StopWordsRemover 
+
+val spark = SparkSession.builder.appName("SentimentAnalysis").getOrCreate()
+val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
+tweetsDF.show(5)
+
+val nettoyerUDF = udf((text: String) => {
+  var cleanedText = text.replaceAll("http[\\S]+", "")
+  cleanedText = cleanedText.replaceAll("@\\w+", "")
+  cleanedText = cleanedText.replaceAll("#\\w+", "")
+  cleanedText = cleanedText.replaceAll("[^a-zA-Z\\s]", "")
+  cleanedText = cleanedText.toLowerCase()
+  cleanedText
+})
+ 
+val tweetsDF = spark.read.option("header", "true").csv("H:/Desktop/bddTwitter/Data3.csv")
+val cleanedTweetsDF = tweetsDF.withColumn("cleaned_text", nettoyerUDF(col("selected_text")))
+cleanedTweetsDF.select("selected_text", "cleaned_text").show(5)
+
+val tokenizer = new Tokenizer().setInputCol("cleaned_text").setOutputCol("tokens") 
+val tokenizedDF = tokenizer.transform(cleanedTweetsDF)
+tokenizedDF.select("cleaned_text", "tokens").show(5)
+
+val remover = new StopWordsRemover()
+  .setInputCol("tokens") 
+  .setOutputCol("filtered_tokens") 
+ 
+val finalDF = remover.transform(tokenizedDF)
+finalDF.select("tokens", "filtered_tokens").show(5)
