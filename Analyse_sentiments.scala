@@ -116,5 +116,5 @@ predictionsNew.select("text","sentiment")
   .write
   .mode("overwrite")
   .option("header", "true")
-  .csv("predictions_new_output.csv
+  .csv("predictions_new_output.csv")
 
