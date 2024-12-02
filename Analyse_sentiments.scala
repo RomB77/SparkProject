@@ -111,10 +111,3 @@ val positiveTweets = predictionsNew.filter(col("prediction") === 1).count()
 val negativeTweets = predictionsNew.filter(col("prediction") === 0).count()
 val positivePercentage = (positiveTweets.toDouble / totalTweets) * 100
 val negativePercentage = (negativeTweets.toDouble / totalTweets) * 100
-
-predictionsNew.select("text","sentiment")
-  .write
-  .mode("overwrite")
-  .option("header", "true")
-  .csv("predictions_new_output.csv")
-
