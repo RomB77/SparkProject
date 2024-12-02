@@ -57,6 +57,16 @@ val lrModel = lr.fit(finalDataDF)
 val predictions = lrModel.transform(finalDataDF)
 predictions.select("selected_text", "prediction").show(5)
 
+val predictionsWithLabels = predictions.select(col("selected_text"), col("sentiment_label"), col("prediction").cast("int"))
+val confusionMatrixDF = predictionsWithLabels.groupBy("sentiment_label", "prediction").count()
+confusionMatrixDF.show()
+val orderedPivotDF = pivotDF.orderBy(expr("CASE WHEN sentiment_label = 0 THEN 0 WHEN sentiment_label = 1 THEN 1 ELSE 2 END"))
+orderedPivotDF.show()
+val totalCorrect = predictionsWithLabels.filter("sentiment_label = prediction").count()
+val total = predictionsWithLabels.count()
+val accuracy = totalCorrect.toDouble / total * 100
+println(s"Précision du modèle : $accuracy %")
+
 
 
 val newTweetsDF = spark.read.option("header", "true").csv("Data4.csv")
