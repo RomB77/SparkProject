@@ -47,7 +47,9 @@ val idf = new IDF().setInputCol("raw_features").setOutputCol("features")
 val idfModel = idf.fit(featurizedDF)
 val rescaledDF = idfModel.transform(featurizedDF)
 
-val finalDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text"), Seq("selected_text"))
+val finalDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text").dropDuplicates("selected_text"), "selected_text") 
+val recoveredDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text"), Seq("selected_text"), "left")
+val finalDFWithRecovered = finalDF.union(recoveredDF.filter(col("sentiment_label").isNull))
 
 val assembler = new VectorAssembler()
   .setInputCols(Array("features"))
