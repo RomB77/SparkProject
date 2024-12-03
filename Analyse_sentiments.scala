@@ -5,7 +5,7 @@ import org.apache.spark.ml.classification.LogisticRegression
 
 val spark = SparkSession.builder.appName("SentimentAnalysis").getOrCreate()
 
-val tweetsDF = spark.read.option("header", "true").csv("H:/Documents/Ing2/S1/Programmation fonctionnelle/Projet/Data3.csv")
+val tweetsDF = spark.read.option("header", "true").csv("Data3.csv")
 tweetsDF.show(5)
 
 val nettoyerUDF = udf((text: String) => {
