@@ -40,7 +40,7 @@ val Array(trainingTweets, testTweets) = filteredDF.randomSplit(Array(0.8, 0.2), 
 trainingTweets.show(5)
 testTweets.show(5)
 
-val hashingTF = new HashingTF().setInputCol("filtered_tokens").setOutputCol("raw_features").setNumFeatures(5000)
+val hashingTF = new HashingTF().setInputCol("filtered_tokens").setOutputCol("raw_features").setNumFeatures(50000)
 val featurizedDF = hashingTF.transform(trainingTweets)
 
 val idf = new IDF().setInputCol("raw_features").setOutputCol("features")
