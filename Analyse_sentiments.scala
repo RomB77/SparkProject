@@ -47,13 +47,13 @@ val idf = new IDF().setInputCol("raw_features").setOutputCol("features")
 val idfModel = idf.fit(featurizedDF)
 val rescaledDF = idfModel.transform(featurizedDF)
 
-val finalDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text").dropDuplicates("selected_text"), "selected_text") 
+val finalDF = rescaledDF.join(updatedDF.select("sentiment_label", "selected_text").dropDuplicates("selected_text"), "selected_text")
 
 val assembler = new VectorAssembler()
   .setInputCols(Array("features"))
   .setOutputCol("final_features")
 
-val finalDataDF = assembler.transform(finalDFWithRecovered)
+val finalDataDF = assembler.transform(finalDF)
 
 val lr = new LogisticRegression().setLabelCol("sentiment_label").setFeaturesCol("final_features")
 val lrModel = lr.fit(finalDataDF)
