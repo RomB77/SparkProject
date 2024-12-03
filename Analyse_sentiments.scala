@@ -55,7 +55,7 @@ val assembler = new VectorAssembler()
   .setInputCols(Array("features"))
   .setOutputCol("final_features")
 
-val finalDataDF = assembler.transform(finalDF)
+val finalDataDF = assembler.transform(finalDFWithRecovered)
 
 val lr = new LogisticRegression().setLabelCol("sentiment_label").setFeaturesCol("final_features")
 val lrModel = lr.fit(finalDataDF)
